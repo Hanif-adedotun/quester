@@ -5,6 +5,17 @@
 await import("./src/env.js");
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+     images: {
+          remotePatterns: [ // Updated to use remotePatterns instead of domains
+               {
+                    protocol: 'https',
+                    hostname: 'ui.aceternity.com',
+                    port: '',
+                    pathname: '/**',
+               },
+          ],
+     },
+};
 
 export default config;
