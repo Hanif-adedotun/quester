@@ -1,20 +1,39 @@
 "use client";
 
-import { useState } from "react";
-
-import { api } from "~/trpc/react";
+import { useState, useEffect } from "react";
+import { postsApi, type Post } from "~/utils/api";
 
 export function LatestPost() {
-  const [latestPost] = api.post.getLatest.useSuspenseQuery();
-
-  const utils = api.useUtils();
+  const [latestPost, setLatestPost] = useState<Post | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
-  const createPost = api.post.create.useMutation({
-    onSuccess: async () => {
-      await utils.post.invalidate();
+
+  const fetchLatestPost = async () => {
+    try {
+      const post = await postsApi.getLatest();
+      setLatestPost(post);
+    } catch (error) {
+      console.error("Failed to fetch latest post:", error);
+    }
+  };
+
+  useEffect(() => {
+    void fetchLatestPost();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await postsApi.create(name);
+      await fetchLatestPost();
       setName("");
-    },
-  });
+    } catch (error) {
+      console.error("Failed to create post:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-xs">
@@ -23,13 +42,7 @@ export function LatestPost() {
       ) : (
         <p>You have no posts yet.</p>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          createPost.mutate({ name });
-        }}
-        className="flex flex-col gap-2"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <input
           type="text"
           placeholder="Title"
@@ -40,9 +53,9 @@ export function LatestPost() {
         <button
           type="submit"
           className="rounded-full bg-white/10 px-10 py-3 font-semibold transition hover:bg-white/20"
-          disabled={createPost.isPending}
+          disabled={isLoading}
         >
-          {createPost.isPending ? "Submitting..." : "Submit"}
+          {isLoading ? "Submitting..." : "Submit"}
         </button>
       </form>
     </div>
